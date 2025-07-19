@@ -13,7 +13,14 @@ pipeline {
             steps {
                 script {
                     echo 'Cloning GitHub repo to Jenkins...'
-                    checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-token', url: 'https://github.com/yashchinchole/RAG-Medical-Chatbot']])
+                    checkout scmGit(
+                        branches: [[name: '*/master']], 
+                        extensions: [], 
+                        userRemoteConfigs: [[
+                            credentialsId: 'github-token', 
+                            url: 'https://github.com/yashchinchole/RAG-Medical-Chatbot'
+                        ]]
+                    )
                 }
             }
         }
@@ -29,10 +36,20 @@ pipeline {
                         sh """
                         aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ecrUrl}
                         docker build -t ${env.ECR_REPO}:${IMAGE_TAG} .
-                        trivy image --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
-                        docker tag ${env.ECR_REPO}:${IMAGE_TAG} ${imageFullTag}
-                        docker push ${imageFullTag}
                         """
+
+                        timeout(time: 5, unit: 'MINUTES') {
+                            sh """
+                            trivy image --timeout 5m --scanners vuln --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
+                            """
+                        }
+
+                        timeout(time: 5, unit: 'MINUTES') {
+                            sh """
+                            docker tag ${env.ECR_REPO}:${IMAGE_TAG} ${imageFullTag}
+                            docker push ${imageFullTag}
+                            """
+                        }
 
                         archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
                     }
