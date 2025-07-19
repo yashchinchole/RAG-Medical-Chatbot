@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="">
+    <link href='https: //fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap' rel='stylesheet'>
+    <title>Medical Chatbot</title>
+    <style>
+        :root {
+            --background: #282822;
+            --black: #252522;
+            --foreground: #d6deeb;
+            --input-background: #0b253a;
+            --input-foreground: #ffffffcc;
+            --border: #219fd544;
+            --editorLineNumber-foreground: #219fd5;
+            --color-keywords: #00bff9;
+            --color-quotes: #6bff81;
+            --color-class-name: #f7ecb5;
+            --color-ts-classes: #d29ffcff;
+            --color-string: #bcf0c0;
+            --color-variable: #a4ceee;
+            --color-constant: #A170C6;
+            --color-number: #8dec95;
+            --brackets: #ffd700;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            margin: 2rem;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+
+        .chat-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+        }
+
+        .user {
+            text-align: right;
+            background-color: var(--black);
+            color: var(--input-foreground);
+            border: 1.5px solid var(--border);
+        }
+
+        .assistant {
+            background-color: var(--black);
+            color: var(--color-keywords);
+            text-align: left;
+            border: 1.5px solid var(--border);
+        }
+
+        .role-label {
+            font-style: italic;
+        }
+
+        form {
+            margin-top: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 3rem;
+            padding: 0.5rem;
+            font-size: 1rem;
+            background-color: var(--input-background);
+            color: var(--input-foreground);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            background-color: var(--input-background);
+            color: var(--input-foreground);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .clear-btn {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h1>AI Medical Chatbot</h1>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <div id="chat-box">
+            {% for msg in messages %}
+            <div class="message {{ msg.role }}">
+                <strong class="role-label">{{ msg.role|capitalize }}:</strong><br /><br>
+                <span class="message-content">{{ msg.content | safe | nl2br }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+
+        <form method="post" action="{{ url_for('index') }}">
+            <textarea name="prompt" placeholder="Ask a medical question..." required></textarea>
+            <br />
+            <button type="submit">Send</button>
+        </form>
+
+        <form method="get" action="{{ url_for('clear') }}">
+            <button type="submit" class="clear-btn">Clear Chat</button>
+        </form>
+    </div>
+</body>
+
+</html>
