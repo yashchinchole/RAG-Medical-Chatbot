@@ -15,9 +15,11 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml uv.lock ./
 
 # 6. Create venv and install dependencies via uv
-RUN uv venv && \
+RUN python -m venv .venv && \
+    .venv/bin/python -m ensurepip && \
     .venv/bin/python -m pip install --upgrade pip && \
     .venv/bin/pip install -e .
+
 
 # 7. Copy source code
 COPY . .
