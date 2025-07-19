@@ -16,8 +16,8 @@ COPY pyproject.toml uv.lock ./
 
 # 6. Create venv and install dependencies via uv
 RUN uv venv && \
-    .venv/bin/uv pip install --upgrade pip && \
-    .venv/bin/uv pip install -e .
+    .venv/bin/python -m pip install --upgrade pip && \
+    .venv/bin/pip install -e .
 
 # 7. Copy source code
 COPY . .
