@@ -33,30 +33,24 @@ pipeline {
                         def ecrUrl = "${accountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.ECR_REPO}"
                         def imageFullTag = "${ecrUrl}:${IMAGE_TAG}"
 
+                        // Docker login and build
                         sh """
                         aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ecrUrl}
                         docker build -t ${env.ECR_REPO}:${IMAGE_TAG} .
                         """
 
-                        sh '''
-                        apt-get update && apt-get install -y wget gnupg lsb-release
-                        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg
-                        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb stable main" > /etc/apt/sources.list.d/trivy.list
-                        apt-get update && apt-get install -y trivy
-                        '''
+                        // Trivy scan using Docker (no install)
+                        sh """
+                        docker run --rm \
+                          -v /var/run/docker.sock:/var/run/docker.sock \
+                          aquasec/trivy image --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
+                        """
 
-                        timeout(time: 5, unit: 'MINUTES') {
-                            sh """
-                            trivy image --timeout 5m --scanners vuln --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
-                            """
-                        }
-
-                        timeout(time: 5, unit: 'MINUTES') {
-                            sh """
-                            docker tag ${env.ECR_REPO}:${IMAGE_TAG} ${imageFullTag}
-                            docker push ${imageFullTag}
-                            """
-                        }
+                        // Tag and push to ECR
+                        sh """
+                        docker tag ${env.ECR_REPO}:${IMAGE_TAG} ${imageFullTag}
+                        docker push ${imageFullTag}
+                        """
 
                         archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
                     }
