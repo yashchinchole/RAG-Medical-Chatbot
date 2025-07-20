@@ -38,6 +38,13 @@ pipeline {
                         docker build -t ${env.ECR_REPO}:${IMAGE_TAG} .
                         """
 
+                        sh '''
+                        apt-get update && apt-get install -y wget gnupg lsb-release
+                        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+                        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb stable main" > /etc/apt/sources.list.d/trivy.list
+                        apt-get update && apt-get install -y trivy
+                        '''
+
                         timeout(time: 5, unit: 'MINUTES') {
                             sh """
                             trivy image --timeout 5m --scanners vuln --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
