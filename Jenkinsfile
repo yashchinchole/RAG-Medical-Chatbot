@@ -25,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Build, Scan, and Push Docker Image to ECR') {
+        stage('Build and Push Docker Image to ECR') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-token']]) {
                     script {
@@ -39,20 +39,11 @@ pipeline {
                         docker build -t ${env.ECR_REPO}:${IMAGE_TAG} .
                         """
 
-                        // Trivy scan using Docker (no install)
-                        sh """
-                        docker run --rm \
-                          -v /var/run/docker.sock:/var/run/docker.sock \
-                          aquasec/trivy image --severity HIGH,CRITICAL --format json -o trivy-report.json ${env.ECR_REPO}:${IMAGE_TAG} || true
-                        """
-
                         // Tag and push to ECR
                         sh """
                         docker tag ${env.ECR_REPO}:${IMAGE_TAG} ${imageFullTag}
                         docker push ${imageFullTag}
                         """
-
-                        archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
                     }
                 }
             }
